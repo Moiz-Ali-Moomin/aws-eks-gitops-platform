@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+// This strict Protobuf schema defines the contract for Order Creation events.
+// This prevents downstream consumers (e.g., Notification Service, Analytics)
+// from crashing due to unexpected "poison pill" JSON formatting changes.
+
+package ecommerce.events;
+
+option go_package = "github.com/my-project/ecommerce-repo/shared-lib/pkg/events";
+
+// Define the schema for the OrderPlaced event payload
+message OrderPlaced {
+  string order_id = 1;
+  string tenant_id = 2; // Crucial for Multi-Tenant Data Isolation (RLS boundaries)
+  
+  string user_id = 3;
+  double total_amount = 4;
+  string currency = 5;
+  
+  int64 timestamp_utc = 6;
+  
+  repeated OrderItem items = 7;
+}
+
+message OrderItem {
+  string product_id = 1;
+  int32 quantity = 2;
+  double unit_price = 3;
+}

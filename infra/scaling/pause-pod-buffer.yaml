@@ -1,0 +1,39 @@
+# This manifest provisions a "Warm Standby" compute buffer.
+# It reserves 20% of cluster CPU/Memory. When an entire region drops and traffic spikes 40%,
+# real pods scale up and INSTANTLY evict these dummy pods, bypassing the 3-minute node boot delay.
+
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: low-priority-pause-buffer
+# Very low priority. Any standard workload will instantly preempt/evict these pods.
+value: -10 
+globalDefault: false
+description: "Used by pause pods to reserve cluster capacity for instantaneous failover scaling."
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: global-failover-buffer
+  namespace: scaling
+spec:
+  # Size this replica count to be exactly 20% of your total cluster P99 compute request
+  replicas: 50 
+  selector:
+    matchLabels:
+      app: global-failover-buffer
+  template:
+    metadata:
+      labels:
+        app: global-failover-buffer
+    spec:
+      priorityClassName: low-priority-pause-buffer
+      # The 'pause' image uses 0.001% CPU. It simply sleeps forever, reserving the VM space.
+      containers:
+      - name: pause
+        image: registry.k8s.io/pause:3.9
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi

@@ -211,6 +211,10 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
+      - uses: sigstore/cosign-installer@v3.4.0
+        with:
+          cosign-release: 'v2.2.3'
+
       - run: gcloud auth configure-docker $GAR_REGION --quiet
 
       - name: Build & Push Images
@@ -232,6 +236,7 @@ jobs:
                   docker build -t $IMAGE -f "$svc/Dockerfile" .
                 fi
                 docker push $IMAGE
+                cosign sign --yes $IMAGE
               else
                  echo "Skipping $NAME (No Changes)"
               fi

@@ -1,0 +1,69 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: edge-rate-limit
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.local_ratelimit
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+            stat_prefix: global_edge_rate_limit
+            # Global limit: 5000 requests per second total ingress
+            token_bucket:
+              max_tokens: 5000
+              tokens_per_fill: 5000
+              fill_interval: 1s
+            filter_enabled:
+              runtime_key: local_rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: local_rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            response_headers_to_add:
+              - append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                header:
+                  key: x-local-rate-limit
+                  value: 'true'
+            # Tenant-based rate limits extracted from x-tenant-id header
+            descriptors:
+              - entries:
+                  - key: header_match
+                    value: x-tenant-id
+                token_bucket:
+                  max_tokens: 500
+                  tokens_per_fill: 500
+                  fill_interval: 1s
+    - applyTo: VIRTUAL_HOST
+      match:
+        context: GATEWAY
+        routeConfiguration:
+          vhost:
+            name: ""
+      patch:
+        operation: MERGE
+        value:
+          rate_limits:
+            - actions:
+                - request_headers:
+                    header_name: x-tenant-id
+                    descriptor_key: header_match

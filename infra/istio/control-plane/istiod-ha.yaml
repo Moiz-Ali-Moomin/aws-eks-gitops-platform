@@ -1,0 +1,45 @@
+# istiod-ha.yaml
+# Production-grade High Availability configuration for the Istio Control Plane.
+# This ensures that even during a nodal or zonal failure, the mesh control plane
+# remains active and new pods can securely join the mesh and receive XDS routing updates.
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: istiod-hpa
+  namespace: istio-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: istiod
+  minReplicas: 3 # Guarantee quorum across 3 availability zones natively
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: istiod-pdb
+  namespace: istio-system
+spec:
+  # Guarantee that during cluster maintenance (e.g. GKE node upgrades)
+  # there is ALWAYS a minimum of 2 istiod replicas available to handle AuthZ/XDS.
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: istiod
+      istio: pilot

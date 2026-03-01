@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubecost
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://kubecost.github.io/cost-analyzer/
+    targetRevision: 2.3.0
+    chart: cost-analyzer
+    helm:
+      # These parameters configure Kubecost to map custom tenant-id labels
+      # directly to cost centers for granular FinOps unit-economics tracking.
+      parameters:
+        - name: kubecostToken
+          value: "replace-with-license"
+        - name: global.prometheus.enabled
+          value: "false" # Reuse existing platform Prometheus
+        - name: global.prometheus.fqdn
+          value: "http://prometheus-server.observability.svc.cluster.local"
+        - name: kubecostModel.customLabels
+          value: "x-tenant-id,team,environment"
+        - name: kubecostModel.podAnnotations
+          value: "tenant-tier"
+        # Export metrics out of the local cluster cell to a central BigQuery data lake
+        - name: kubecostModel.etlResolution
+          value: "1h"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubecost
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

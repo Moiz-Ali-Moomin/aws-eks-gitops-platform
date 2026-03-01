@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-spanner-migration
+  namespace: databases
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: order-service-sa # Uses Workload Identity
+      containers:
+      - name: atlas
+        image: arigaio/atlas:latest-alpine
+        command:
+        - atlas
+        - schema
+        - apply
+        - -u
+        - "spanner://projects/${GCP_PROJECT_ID}/instances/ecommerce-orders-db/databases/orders"
+        - --to
+        - "file:///migrations"
+        - --auto-approve
+        volumeMounts:
+        - name: schema-volume
+          mountPath: /migrations
+      restartPolicy: Never
+      volumes:
+      - name: schema-volume
+        configMap:
+          name: orders-schema-config

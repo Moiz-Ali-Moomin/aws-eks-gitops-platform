@@ -1,0 +1,30 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: check-image-signatures
+  annotations:
+    policies.kyverno.io/title: Check Image Signatures
+    policies.kyverno.io/category: Software Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Verifies that container images have been cryptographically signed by
+      the CI/CD pipeline using Cosign keyless signing.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: verify-image
+      match:
+        any:
+        - resources:
+            kinds:
+              - Pod
+      verifyImages:
+      - imageReferences:
+        - "us-central1-docker.pkg.dev/*"
+        attestors:
+        - entries:
+          - keyless:
+              subject: "https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup/.github/workflows/ci.yml@refs/heads/main"
+              issuer: "https://token.actions.githubusercontent.com"
