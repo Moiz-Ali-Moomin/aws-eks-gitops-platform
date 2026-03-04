@@ -7,15 +7,27 @@
 ---
 
 ## 📖 Platform Overview
-This repository contains the declarative state for the Enterprise E-Commerce Platform. It unifies Application Engineering (18 independent Go microservices), Cloud Infrastructure (Terraform/GKE), Data Engineering (Kafka/Spark Structured Streaming), and Security (Global mTLS, ExternalSecrets) under a strict GitOps methodology managed by ArgoCD.
+This repository contains the declarative state for the Enterprise E-Commerce Platform. It unifies Application Engineering (19 independent Go microservices), Cloud Infrastructure (Terraform/AWS EKS), Data Engineering (Kafka/Spark Structured Streaming), and Security (Global mTLS, ExternalSecrets) under a strict GitOps methodology managed by ArgoCD.
 
 > [!WARNING]
-> **Strict GitOps Enforcement:** Modifying Kubernetes resources manually via `kubectl apply` or `helm upgrade` in the production cluster is a violation of policy. All changes must be committed to this repository. ArgoCD (`selfHeal: true`) will aggressively overwrite manual drift.
+> **Strict GitOps Enforcement:** Modifying Kubernetes resources manually via `kubectl apply` or `helm upgrade` in the production cluster is a critical violation of policy. All changes must be committed to this repository. ArgoCD (`selfHeal: true`) will aggressively overwrite manual drift within 3 minutes.
 
 ---
 
-## 🏛️ Architecture & Traffic Flow
-The platform is built on Google Kubernetes Engine (GKE) and enforcing Zero-Trust networking via Istio.
+## 🏛️ Platform Architecture
+### System Design Philosophy
+The platform is designed around the principles of **high availability**, **horizontal scalability**, **fault isolation**, and **zero-trust networking**. We leverage a purely declarative GitOps model extending from infrastructure (Terraform) to application deployment (ArgoCD + Helm).
+
+### Bounded Contexts of Microservices
+Microservices are strictly separated by domain (e.g., Auth, Cart, Order, Product). Direct database sharing is prohibited. Inter-service communication occurs synchronously via gRPC/HTTP through the Istio Service Mesh, or asynchronously via Kafka topics. 
+
+### Control Plane vs Data Plane
+- **Control Plane:** AWS EKS managed control plane. ArgoCD operates as the continuous deployment controller. Istiod manages mesh configurations and certificate issuance.
+- **Data Plane:** Envoy sidecars intercept and route all intra-cluster traffic. Data persistence is offloaded to managed AWS RDS (Postgres), ElastiCache (Redis), and MSK (Kafka).
+
+### Service Mesh Topology & Network Segmentation
+The platform enforces a Default-Deny network topology via Kubernetes `NetworkPolicy` and Istio `AuthorizationPolicy`. 
+Inbound external traffic is terminated at the AWS ALB, routed to the Istio Ingress Gateway, and pushed to the `api-gateway`. The `api-gateway` routes traffic to core services. Core services are restricted from communicating with unrelated domains.
 
 ```mermaid
 graph TD
@@ -49,151 +61,168 @@ graph TD
 
 ---
 
-## 🔐 1. Secret Management (External Secrets Flow)
+## 🔐 Security Model
+### Zero-Trust Networking & mTLS Enforcement
+All service-to-service communication is encrypted in transit using **mTLS STRICT** mode enforced by Istio. Pods without Envoy sidecars or presenting invalid certificates are instantly rejected.
 
-We do not store `.env` files or base64 `Secret` manifests in git. Secrets are mastered in **AWS Secrets Manager** and synchronized dynamically into EKS memory via the External Secrets Operator (ESO).
+### IAM Boundaries & IRSA Usage
+IAM Roles for Service Accounts (IRSA) enforce least-privilege cloud access. A service running in EKS (e.g., `order-service`) is bound to a specific IAM Role via OIDC (`order-service-irsa`). This role explicitly dictates access to AWS resources (S3, SQS, KMS, Secrets Manager). **Monolithic wide-access roles are banned.**
 
-**Sync Flow:** `AWS Secrets Manager` → `IRSA` → `ClusterSecretStore` → `ExternalSecret` → `Native K8s Secret`
+### Secret Rotation Policy
+Secrets are mastered in **AWS Secrets Manager**. We use the **External Secrets Operator (ESO)** to continuously sync changes. Passwords, API keys, and certificates are rotated automatically via AWS Lambda triggers every 30 days. ESO syncs these updates into native Kubernetes Secrets within 1 minute.
 
-### Creating a New Secret
-Before deploying a service that requires a secret, you must provision it in AWS:
-```bash
-# Example: Adding a new DB password for cart-service
-aws secretsmanager create-secret --name cart-db-password --secret-string "super-secure-password"
-```
+### PodSecurityStandards
+Platform-wide admission controllers enforce `Restricted` Pod Security Standards (PSS):
+- `runAsNonRoot: true`
+- `readOnlyRootFilesystem: true`
+- `allowPrivilegeEscalation: false`
+- `capabilities: drop: ["ALL"]`
 
-> [!IMPORTANT]
-> **Dependency Block:** If an `ExternalSecret` requests a GSM key that does not exist, the operator will block the creation of the native K8s `Secret`. Subsequently, the dependent Deployment Pods will fail to start (`CreateContainerConfigError`).
-
-**Verify Synchronization:**
-```bash
-# Verify the ESO has pulled the secret successfully
-kubectl get externalsecrets -A | grep True
-```
+### Supply Chain Security
+All Docker images are built distroless, signed using **Cosign** (Sigstore), and pushed to ECR. Kyverno admission policies verify the cryptographic signature of the image before scheduling the pod. 
 
 ---
 
-## 🚀 2. Infrastructure Initialization (Terraform)
+## 🏗️ GitOps Governance
+### ArgoCD Sync Waves
+To prevent race conditions during cold starts or disaster recovery scenarios, ArgoCD deployments use explicit Sync Waves:
+1. **Wave -10:** CRDs and Namespaces
+2. **Wave -5:** Service Mesh (Istio) & Security (External Secrets)
+3. **Wave 0:** Databases, Caches, & Messaging (Postgres, Redis, Kafka)
+4. **Wave 5:** Observability & Tooling
+5. **Wave 10:** Microservices
 
-Infrastructure MUST be provisioned sequentially. 
+### Drift Detection & Change Approval
+ArgoCD continuously monitors the cluster state against the Git repository. Any drift triggers an immediate alert to `#alerts-platform-drift` and auto-heals within 3 minutes.
+All code and infrastructure changes require PR reviews, passing CI (linting, tests, security scans), and explicit approval from a CODEOWNER.
 
-### Step 2.1: Bootstrap AWS VPC & EKS
-Enable required APIs and initialize the remote state bucket.
-```bash
-cd infra/terraform/aws/vpc
-terraform init && terraform apply -auto-approve
-
-cd ../eks
-terraform init && terraform apply -auto-approve
-
-# Authenticate local context
-aws eks update-kubeconfig --region us-east-1 --name ecommerce-platform-eks-prod
-```
-
----
-
-## 🔄 3. CI/CD & Image Immutability
-
-Docker images are built via GitHub Actions. We strictly enforce **immutable image tags** tying deployments back to exact `git.sha` references.
-
-1. Commits trigger `.github/workflows/build-push-ecr.yaml`.
-2. Services are built (distroless) and pushed to `Amazon ECR` with the Git SHA tag.
-3. ArgoCD Image Updater (or Kustomize PRs) detects the new SHA and patches the manifest.
-4. ArgoCD orchestrates a Rollout (Canary) deployment.
-
-> [!CAUTION]
-> Utilizing `:latest` tags is explicitly banned to prevent non-deterministic rollbacks.
+### Environment Promotion Strategy
+Code merges cascade automatically: `dev` ➔ `staging` ➔ `prod`. 
+Production promotion requires a manual approval step in GitHub Actions before standardizing the Git SHA over to the `prod` ArgoCD application paths.
 
 ---
 
-## 📦 4. Kubernetes & GitOps Bootstrapping (ArgoCD)
+## 🚀 Deployment Strategy
+### Progressive Delivery (Argo Rollouts)
+We utilize **Argo Rollouts** to orchestrate safe deployment strategies. The standard microservice profile uses a **Canary Deployment**:
+- **Step 1:** Route 10% of traffic to the new replicaset.
+- **Step 2:** Pause automatically to collect Prometheus metrics (latency, error rates).
+- **Step 3:** If SLOs are met, upscale to 50% traffic.
+- **Step 4:** Pause for final validation before 100% promotion.
 
-Once the EKS cluster is available, hand over deployment execution to ArgoCD. The "App of Apps" pattern manages dependency ordering.
-
-### Step 4.1: Install ArgoCD
-```bash
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.10.4/manifests/install.yaml
-```
-
-### Step 4.2: Apply Base Dependencies (Manual)
-Service Mesh and Secrets Operators must exist before stateful apps.
-```bash
-# 1. Namespaces (Initializes Istio injection labels and PodSecurityStandards)
-kubectl apply -f infra/namespaces/
-
-# 2. Istio Mesh (Sets up mTLS STRICT and Default-Deny Authorization Policies)
-istioctl install --set profile=default -y
-kubectl apply -f infra/istio/security/
-
-# 3. External Secrets (Requires IRSA from TF Step 2.1)
-helm upgrade --install external-secrets external-secrets/external-secrets -n external-secrets --wait
-kubectl apply -f infra/secrets/external-secrets.yaml
-```
-
-### Step 4.3: Execute GitOps Sync
-Apply the Root Application. This will deterministically sync Databases → Kafka → Observability → Data Pipeline → Microservices.
-```bash
-kubectl apply -f argocd/root/application.yaml
-```
+### Failure Rollback Procedure & Blast Radius Control
+If error rates spike during a rollout, Argo Rollouts instantly aborts the canary, shifts 100% of traffic back to the stable replicaset, and scales down the failing pods.
+Network Policies and Pod Anti-Affinity rules ensure that the blast radius of a pod crash or network disruption is isolated strictly to that specific AZ and service context.
 
 ---
 
-## 📊 5. Data Pipeline (ELT) & Analytics
+## ⚙️ Reliability Engineering
+### SLOs, SLIs, and Error Budgets
+Each service is mandated to define strict Service Level Objectives (SLOs) tracked via Prometheus:
+- **Availability:** 99.99% successful responses (HTTP 2xx, 3xx, 4xx).
+- **Latency:** 95th percentile (P95) response time < 200ms.
 
-The ELT pipeline handles transactional analytics asynchronously without impacting the hot path.
+### Rate Limiting & Circuit Breaking
+Istio `DestinationRules` and `EnvoyFilters` implement aggressive backpressure control:
+- **Circuit Breaking:** Triggers if a backend service returns 5xx errors for >10 seconds, failing fast to prevent cascading connection pool exhaustion.
+- **Rate Limiting:** Protects the `api-gateway` and heavyweight endpoints via Redis-backed token bucket algorithms natively via Envoy.
 
-**Data Flow:** `Order Service` → `Kafka` → `Spark Structured Streaming` → `Postgres` → `Metabase`
-
-1. **Spark Operator:** Orchestrates PySpark jobs inside the cluster.
-2. **Exactly-Once Semantics:** `funnel_analysis.py` uses `readStream` reading from the `page.viewed` topic, leveraging GCS checkpointing (`CHECKPOINT_PATH`) to guarantee no data loss on pod eviction.
-3. **Database Idempotency:** The Spark Py4j JDBC writer executes native Postgres `UPSERT (ON CONFLICT DO UPDATE)` commands locking records safely.
-
-### Monitoring Streaming Jobs
-```bash
-# Inspect the spark driver processing loop
-kubectl logs -f spark-funnel-analysis-driver -n data
-```
+### Retry Strategies
+Idempotent methods (GET, PUT, DELETE) are configured for transparent retries within the mesh (max 3 retries, exponential backoff) before surfacing a 503 Service Unavailable to the client.
 
 ---
 
-## ⚙️ 6. Operations & Observability 
-
-All applications are natively instrumented with OpenTelemetry (`shared-lib/pkg/tracing`) propagating W3C context headers.
-
-### Common SRE Commands
-
-**Debugging Traffic Routing (Istio):**
-```bash
-# Check if a VirtualService is rejecting your route
-istioctl proxy-status
-istioctl analyze -n ecommerce
-```
-
-**Validating HPA / Scaling:**
-```bash
-# Confirm metrics server is feeding resource utilization properly
-kubectl get hpa -A
-```
-
-**Verifying Kafka Consumer Lag:**
-```bash
-# Ensure consumers aren't falling behind producer ingestion rates
-kubectl exec -it my-kafka-cluster-kafka-0 -n kafka -- bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group notification-group
-```
-
-**Inspecting Application Logs (Structured):**
-```bash
-# Search for specific trace IDs across the cart-service
-kubectl logs -l app=cart-service -n apps-core | grep '"trace_id":"xyz123"'
-```
+## 🔭 Observability
+### Metrics, Tracing, and Logging
+- **Metrics:** Instrument code via OpenTelemetry SDKs. Auto-scraped by **Prometheus**.
+- **Distributed Tracing:** Implemented globally via W3C Trace Context propagating through Istio and Go binaries. Collected by the **OpenTelemetry Collector** and visualized in **Grafana Tempo**.
+- **Log Aggregation:** Fluent Bit daemonsets forward completely structured JSON logs to **Loki**.
+  
+### Golden Signals & Alerting Strategy
+Alertmanager routes critical P0 pages to PagerDuty tracking the Four Golden Signals:
+1. **Latency:** Time taken to service a request (P99 spikes).
+2. **Traffic:** Total demand on the system (RPS).
+3. **Errors:** Rate of failing requests (5xx spikes).
+4. **Saturation:** Resource constraints (CPU/Memory throttling, Connection Pool exhaustion).
 
 ---
 
-## 🏁 7. Verification Checklist
-A deployment is only finalized when all of the following conditions report healthy:
+## 🚨 Disaster Recovery
+### RPO / RTO Definitions
+- **Recovery Point Objective (RPO):** 5 minutes for relational databases; 1 hour for analytics data.
+- **Recovery Time Objective (RTO):** < 15 minutes for full cluster reconstruction via GitOps (excluding data restoration).
 
-* [ ] `kubectl get externalsecrets -A` (All True/Synced)
-* [ ] `kubectl get hpa -A` (All Targets registering % utilization, no `<unknown>`)
-* [ ] `kubectl get pods -n istio-system` (Ingress Gateway Running)
-* [ ] Grafana Dashboards confirm 99% API Latency SLO `< 500ms`.
+### Region Failure Handling
+In the event of an `us-east-1` total regional outage, global DNS (Route53) shifts traffic to `us-west-2`. The secondary cluster runs active-standby synced via ArgoCD.
+
+### Kafka & Database Restore Procedures
+- **Kafka:** Handled via MSK multi-AZ replication.
+- **RDS Postgres:** Continuous WAL archiving allows Point-In-Time-Recovery (PITR). Restore initiates via an automated GitHub Action triggering Terraform state modifications.
+
+---
+
+## 📈 Data Platform
+### Event Streaming Model
+The Data Platform heavily leverages Kafka as an event-driven backbone. The core philosophy centers on a single immutable source of truth (`page.viewed`, `order.created`).
+
+### Exactly-Once Guarantees & Idempotency
+Consumers process data with exactly-once semantics using offset tracking and idempotent database handlers. 
+- **Spark Structured Streaming:** Checkpoints process offsets to GCS/S3. If a pod is evicted, it seamlessly resumes from the precise last committed offset.
+- **Microservices:** Implement `idempotency_key` headers and database unique constraints (UPSERT) to guard against duplicate message delivery intrinsic to at-least-once Kafka guarantees.
+
+---
+
+## 💰 Cost Governance
+### Cluster Autoscaling & Spot Instances
+The EKS cluster utilizes **Karpenter** for rapid node provisioning.
+- **Stateless Workloads:** Scheduled on AWS Spot Instances requiring aggressive graceful shutdown handling.
+- **Stateful Workloads:** Scheduled on strictly On-Demand nodes.
+
+### Resource Quotas & Cost Monitoring
+All namespaces strictly enforce `ResourceQuotas` and `LimitRanges`. Individual Pods must declare Request/Limit bounds.
+**Kubecost** continually aggregates cloud billing and Prometheus metrics to attribute dollar costs logically per namespace and deployment.
+
+---
+
+## ✅ Platform Verification
+### Production Readiness Checklist
+Before any new service is merged, the CODEOWNER verifies:
+* [ ] NetworkPolicy restricts ingress/egress appropriately.
+* [ ] `readOnlyRootFilesystem` and SecurityContext drops all capabilities.
+* [ ] PDB specifies `minAvailable: 1`.
+* [ ] HPA targets CPU utilization accurately.
+* [ ] IRSA role has minimum viable permissions.
+* [ ] Canary steps are validated in Rollout manifest.
+
+### Deployment Validation & Smoke Tests
+Following a GitOps sync, a post-deploy Argo Hook triggers an automated smoke test suite validating core integration points via the `api-gateway`.
+
+---
+
+## 📘 Platform Runbooks
+### Immediate Triage
+- **Service Crash Recovery:** Argo Rollouts auto-aborts. Identify the panic trace in Loki.
+- **Pod Eviction Handling:** Validate `metrics-server` output. Typically indicates memory limits exceeded (OOMKilled). Increase limits or fix memory leak.
+- **Kafka Lag Mitigation:** `kubectl get hpa -n apps-async`. If consumers are maxed, temporarily increase `maxReplicas` and evaluate partition keys for skew.
+- **Secret Sync Failures:** Describe the `ExternalSecret` resource. Validate the IRSA role mapping and AWS Secrets Manager key existence.
+- **Network Routing Failures:** Inspect `NetworkPolicy` mapping and Istio `VirtualService` configurations using `istioctl analyze`.
+
+---
+
+## 🛠️ Appendices
+
+### Standard Kubectl Debug Commands
+```bash
+# View rollout status and canary progression
+kubectl argo rollouts get rollout <service-name> -n apps-core --watch
+
+# Trace ESO credential sync errors
+kubectl describe externalsecret <secret-name> -n apps-core
+kubectl logs -l app.kubernetes.io/name=external-secrets -n external-secrets
+
+# Verify Istio mTLS STRICT policies
+istioctl authn tls-check <pod-name> -n apps-core
+
+# Validate HPA utilization matching
+kubectl get hpa -n apps-core -w
+```
