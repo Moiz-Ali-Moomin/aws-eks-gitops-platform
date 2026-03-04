@@ -2,7 +2,7 @@ apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
 metadata:
   name: funnel-analysis
-  namespace: data
+  namespace: apps-async
 spec:
   type: Python
   mode: cluster
@@ -49,7 +49,7 @@ spec:
         mountPath: /opt/spark/jobs
     env:
       - name: CHECKPOINT_PATH
-        value: gs://ecommerce-spark-checkpoints/funnel_analysis
+        value: s3a://ecommerce-spark-checkpoints/funnel_analysis
       - name: DB_URL
         value: jdbc:postgresql://postgres-primary.data-postgres.svc.cluster.local:5432/ecommerce_db
       - name: DB_USER
@@ -65,3 +65,5 @@ spec:
   deps:
     packages:
       - org.postgresql:postgresql:42.6.0
+      - org.apache.hadoop:hadoop-aws:3.3.4
+      - com.amazonaws:aws-java-sdk-bundle:1.12.262

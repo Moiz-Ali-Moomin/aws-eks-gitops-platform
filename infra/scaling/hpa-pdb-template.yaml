@@ -32,7 +32,7 @@ metadata:
   name: strict-pdb
   namespace: apps-core
 spec:
-  # Guarantees high availability during GKE Node Upgrades or Preemptions
+  # Guarantees high availability during EKS Node Upgrades or Spot Interruptions
   maxUnavailable: 1
   selector:
     matchLabels:

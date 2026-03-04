@@ -1,8 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: atlas-spanner-migration
-  namespace: databases
+  name: atlas-postgres-migration
+  namespace: data-postgres
   annotations:
     argocd.argoproj.io/hook: PreSync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
@@ -10,7 +10,7 @@ spec:
   backoffLimit: 1
   template:
     spec:
-      serviceAccountName: order-service-sa # Uses Workload Identity
+      serviceAccountName: default
       containers:
       - name: atlas
         image: arigaio/atlas:latest-alpine
@@ -19,7 +19,7 @@ spec:
         - schema
         - apply
         - -u
-        - "spanner://projects/${GCP_PROJECT_ID}/instances/ecommerce-orders-db/databases/orders"
+        - "postgres://${DB_USER}:${DB_PASSWORD}@postgres-primary.data-postgres.svc.cluster.local:5432/orders"
         - --to
         - "file:///migrations"
         - --auto-approve

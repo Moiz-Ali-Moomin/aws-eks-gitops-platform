@@ -13,7 +13,7 @@ route:
 receivers:
   - name: "default-receiver"
     webhook_configs:
-      - url: "http://notification-service.ecommerce.svc.cluster.local:8080/internal/alert"
+      - url: "http://notification-service.apps-async.svc.cluster.local:8080/internal/alert"
   - name: "pagerduty-or-opsgenie"
     # Placeholder for real integration
     email_configs:

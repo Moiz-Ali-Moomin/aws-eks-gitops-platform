@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { BarChart3, TrendingUp, Users, AlertCircle } from "lucide-react";

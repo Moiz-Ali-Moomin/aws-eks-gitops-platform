@@ -120,7 +120,7 @@ def main():
     ).filter(col("event_id").isNotNull())
 
     # 2. Write Stream with Checkpointing and ForeachBatch (Exactly-Once)
-    checkpoint_loc = os.environ.get("CHECKPOINT_PATH", "gs://ecommerce-spark-checkpoints/funnel_analysis")
+    checkpoint_loc = os.environ.get("CHECKPOINT_PATH", "s3a://ecommerce-spark-checkpoints/funnel_analysis")
     
     query = events_stream.writeStream \
         .outputMode("append") \

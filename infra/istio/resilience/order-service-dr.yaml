@@ -2,9 +2,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
   name: order-service-resilience
-  namespace: ecommerce
+  namespace: apps-core
 spec:
-  host: order-service.ecommerce.svc.cluster.local
+  host: order-service.apps-core.svc.cluster.local
   trafficPolicy:
     connectionPool:
       tcp:

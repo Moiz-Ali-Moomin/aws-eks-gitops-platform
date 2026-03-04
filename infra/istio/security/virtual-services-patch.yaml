@@ -5,7 +5,7 @@ apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: ecommerce-gateway-routing-patch
-  namespace: ecommerce
+  namespace: istio-system
 spec:
   hosts:
   - "*"

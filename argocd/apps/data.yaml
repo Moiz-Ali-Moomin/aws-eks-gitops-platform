@@ -10,7 +10,7 @@ metadata:
 spec:
   project: data
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: infra/databases
     directory:
@@ -37,14 +37,14 @@ metadata:
 spec:
   project: data
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: infra/kafka
     directory:
       recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: data-kafka
+    namespace: kafka
   syncPolicy:
     automated:
       prune: false
@@ -64,7 +64,7 @@ metadata:
 spec:
   project: data
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: resources/kafka-topics
     directory:
@@ -72,34 +72,6 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: kafka
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
----
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: data-metabase
-  namespace: platform-argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "7"
-spec:
-  project: data
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: infra/metabase
-    helm:
-      valueFiles:
-        - values.yaml
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: data-metabase
   syncPolicy:
     automated:
       prune: true

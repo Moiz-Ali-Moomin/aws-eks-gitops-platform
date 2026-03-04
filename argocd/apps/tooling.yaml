@@ -8,7 +8,7 @@ metadata:
 spec:
   project: tooling
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: infra/sonarqube
     helm:
@@ -34,7 +34,7 @@ metadata:
 spec:
   project: tooling
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: infra/spark
     helm:
@@ -60,7 +60,7 @@ metadata:
 spec:
   project: tooling
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: infra/airflow
     helm:
@@ -86,7 +86,7 @@ metadata:
 spec:
   project: tooling
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: infra/metabase
     helm:

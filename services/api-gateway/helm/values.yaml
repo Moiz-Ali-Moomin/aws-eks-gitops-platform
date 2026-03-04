@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 autoscaling:
   enabled: false
@@ -8,15 +8,17 @@ podDisruptionBudget:
   minAvailable: 1
 
 global:
+  awsAccountId: ""
+  awsRegion: "us-east-1"
   image:
-    registry: us-central1-docker.pkg.dev
-    project: ecommerce-microservice-53
+    registry: ""
+    project: ""
     repository: ecommerce-repo
 
 image:
   name: api-gateway
   tag: "latest"
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
@@ -50,5 +52,6 @@ resources:
 
 serviceAccount:
   create: true
+
   name: api-gateway
-  gcpServiceAccount: api-gateway@ecommerce-project.iam.gserviceaccount.com
+

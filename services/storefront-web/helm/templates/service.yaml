@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "storefront-service.fullname" . }}
+  name: {{ include "storefront-web.fullname" . }}
   labels:
-    {{- include "storefront-service.labels" . | nindent 4 }}
+    {{- include "storefront-web.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,4 +12,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "storefront-service.selectorLabels" . | nindent 4 }}
+    {{- include "storefront-web.selectorLabels" . | nindent 4 }}

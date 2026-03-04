@@ -36,7 +36,7 @@ metadata:
   name: istiod-pdb
   namespace: istio-system
 spec:
-  # Guarantee that during cluster maintenance (e.g. GKE node upgrades)
+  # Guarantee that during cluster maintenance (e.g. EKS node upgrades)
   # there is ALWAYS a minimum of 2 istiod replicas available to handle AuthZ/XDS.
   minAvailable: 2
   selector:

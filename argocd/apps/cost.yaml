@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-kubecost
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://kubecost.github.io/cost-analyzer
+    targetRevision: 2.3.1 # or latest, keeping stable
+    chart: cost-analyzer
+    helm:
+      values: |
+        global:
+          prometheus:
+            enabled: false
+            fqdn: http://prometheus-server.platform-observability.svc.cluster.local:80
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-cost
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

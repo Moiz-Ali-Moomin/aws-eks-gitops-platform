@@ -2,11 +2,11 @@ apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: conversion-webhook
-  namespace: apps-async
+  namespace: apps-public
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: gcp-secret-store
+    name: aws-secret-store
     kind: ClusterSecretStore
   target:
     name: conversion-webhook-secrets

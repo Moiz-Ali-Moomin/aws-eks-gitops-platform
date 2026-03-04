@@ -2,14 +2,14 @@ apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: order-service-routing
-  namespace: ecommerce
+  namespace: apps-core
 spec:
   hosts:
-  - order-service.ecommerce.svc.cluster.local
+  - order-service.apps-core.svc.cluster.local
   http:
   - route:
     - destination:
-        host: order-service.ecommerce.svc.cluster.local
+        host: order-service.apps-core.svc.cluster.local
         port:
           number: 8080
     retries:

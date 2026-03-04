@@ -9,10 +9,10 @@ community:
 # Required by chart
 monitoringPasscode: "sonarmonitoring"
 
-# Persistence - GKE-compatible
+# Persistence - EKS-compatible
 persistence:
   enabled: true
-  storageClass: standard-rwo  # GKE standard storage class
+  storageClass: gp3  # AWS EBS gp3 storage class
   accessMode: ReadWriteOnce
   size: 20Gi
 

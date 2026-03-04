@@ -6,7 +6,7 @@ metadata:
 spec:
   description: "Stateful Workloads (Kafka, DBs)"
   sourceRepos:
-    - "https://github.com/your-org/ecommerce-platform.git"
+    - "https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks"
   destinations:
     - namespace: "data-*"
       server: https://kubernetes.default.svc

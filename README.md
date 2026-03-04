@@ -19,10 +19,10 @@ The platform is built on Google Kubernetes Engine (GKE) and enforcing Zero-Trust
 
 ```mermaid
 graph TD
-    User((Client)) -->|HTTPS| GLB[GCP Load Balancer]
-    GLB --> Istio[Istio Ingress Gateway]
+    User((Client)) -->|HTTPS| ALB[AWS Application Load Balancer]
+    ALB --> Istio[Istio Ingress Gateway]
 
-    subgraph "GKE Cluster (Strict mTLS enforcing)"
+    subgraph "EKS Cluster (Strict mTLS enforcing)"
         Istio -->|VirtualService| Gateway[API Gateway proxy]
 
         %% Core Domain
@@ -51,16 +51,15 @@ graph TD
 
 ## 🔐 1. Secret Management (External Secrets Flow)
 
-We do not store `.env` files or base64 `Secret` manifests in git. Secrets are mastered in **Google Secret Manager (GSM)** and synchronized dynamically into GKE memory via the External Secrets Operator (ESO).
+We do not store `.env` files or base64 `Secret` manifests in git. Secrets are mastered in **AWS Secrets Manager** and synchronized dynamically into EKS memory via the External Secrets Operator (ESO).
 
-**Sync Flow:** `GSM` → `Workload Identity` → `ClusterSecretStore` → `ExternalSecret` → `Native K8s Secret`
+**Sync Flow:** `AWS Secrets Manager` → `IRSA` → `ClusterSecretStore` → `ExternalSecret` → `Native K8s Secret`
 
 ### Creating a New Secret
-Before deploying a service that requires a secret, you must provision it in GCP:
+Before deploying a service that requires a secret, you must provision it in AWS:
 ```bash
 # Example: Adding a new DB password for cart-service
-gcloud secrets create cart-db-password --replication-policy="automatic"
-echo -n "super-secure-password" | gcloud secrets versions add cart-db-password --data-file=-
+aws secretsmanager create-secret --name cart-db-password --secret-string "super-secure-password"
 ```
 
 > [!IMPORTANT]
@@ -78,34 +77,27 @@ kubectl get externalsecrets -A | grep True
 
 Infrastructure MUST be provisioned sequentially. 
 
-### Step 2.1: Bootstrap GCP & IAM
+### Step 2.1: Bootstrap AWS VPC & EKS
 Enable required APIs and initialize the remote state bucket.
 ```bash
-cd infra/terraform/gcp/bootstrap-backend
+cd infra/terraform/aws/vpc
 terraform init && terraform apply -auto-approve
 
-cd ../bootstrap-identity
-terraform init && terraform apply -auto-approve
-```
-
-### Step 2.2: Compute & Service Mesh Initialization
-Provision GKE, Node Pools, and Workload Identity bindings.
-```bash
-cd ../gke
+cd ../eks
 terraform init && terraform apply -auto-approve
 
 # Authenticate local context
-gcloud container clusters get-credentials ecommerce-platform-prod --region us-central1
+aws eks update-kubeconfig --region us-east-1 --name ecommerce-platform-eks-prod
 ```
 
 ---
 
 ## 🔄 3. CI/CD & Image Immutability
 
-Docker images are built via Google Cloud Build (or GitHub Actions). We strictly enforce **immutable image tags** tying deployments back to exact `git.sha` references.
+Docker images are built via GitHub Actions. We strictly enforce **immutable image tags** tying deployments back to exact `git.sha` references.
 
-1. Commits trigger `.github/workflows/ci.yml`.
-2. Services are built (distroless) and pushed to `us-central1-docker.pkg.dev` with the Git SHA tag.
+1. Commits trigger `.github/workflows/build-push-ecr.yaml`.
+2. Services are built (distroless) and pushed to `Amazon ECR` with the Git SHA tag.
 3. ArgoCD Image Updater (or Kustomize PRs) detects the new SHA and patches the manifest.
 4. ArgoCD orchestrates a Rollout (Canary) deployment.
 
@@ -116,7 +108,7 @@ Docker images are built via Google Cloud Build (or GitHub Actions). We strictly 
 
 ## 📦 4. Kubernetes & GitOps Bootstrapping (ArgoCD)
 
-Once the GKE cluster is available, hand over deployment execution to ArgoCD. The "App of Apps" pattern manages dependency ordering.
+Once the EKS cluster is available, hand over deployment execution to ArgoCD. The "App of Apps" pattern manages dependency ordering.
 
 ### Step 4.1: Install ArgoCD
 ```bash
@@ -134,7 +126,7 @@ kubectl apply -f infra/namespaces/
 istioctl install --set profile=default -y
 kubectl apply -f infra/istio/security/
 
-# 3. External Secrets (Requires Workload Identity from TF Step 2.1)
+# 3. External Secrets (Requires IRSA from TF Step 2.1)
 helm upgrade --install external-secrets external-secrets/external-secrets -n external-secrets --wait
 kubectl apply -f infra/secrets/external-secrets.yaml
 ```

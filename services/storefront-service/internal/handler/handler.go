@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup/services/storefront-service/internal/service"
+	"github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks/services/storefront-service/internal/service"
 )
 
 // --- Shared Types ---

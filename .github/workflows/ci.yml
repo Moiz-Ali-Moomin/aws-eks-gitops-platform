@@ -22,12 +22,11 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
-  GKE_CLUSTER: ecommerce-prod
-  GKE_REGION: us-central1
-  GAR_REGION: us-central1-docker.pkg.dev
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
   ARTIFACT_REPO: ecommerce-repo
-  TF_WORKING_DIR: infra/gke
-  GO_VERSION: "1.22.0"
+  TF_WORKING_DIR: infra/terraform/aws
+  GO_VERSION: "1.24.0"
 
 # =====================================================
 # 0. QUALITY GATE
@@ -137,9 +136,6 @@ jobs:
       contents: read
       id-token: write
 
-    env:
-      TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -156,10 +152,12 @@ jobs:
             echo "changes=false" >> $GITHUB_OUTPUT
           fi
 
-      - uses: google-github-actions/auth@v2
+      - name: Configure AWS Credentials
+        if: steps.filter.outputs.changes == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          workload_identity_provider: projects/662443466894/locations/global/workloadIdentityPools/terraform-pool-2/providers/github
-          service_account: terraform-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-ecr-role
+          aws-region: ${{ env.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v3
         if: steps.filter.outputs.changes == 'true'
@@ -182,7 +180,7 @@ jobs:
         if: steps.filter.outputs.changes == 'true'
         with:
           name: tfplan
-          path: infra/gke/tfplan
+          path: ${{ env.TF_WORKING_DIR }}/tfplan
 
       - if: github.ref == 'refs/heads/main' && steps.filter.outputs.changes == 'true'
         run: terraform apply -auto-approve tfplan
@@ -198,48 +196,63 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: prod
 
+    permissions:
+      contents: write
+      id-token: write
+
     steps:
       - uses: actions/checkout@v4
         with:
-          # Required to push commits back to the repo
           token: ${{ secrets.PAT_TOKEN || github.token }}
 
-      - uses: google-github-actions/auth@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          workload_identity_provider: projects/662443466894/locations/global/workloadIdentityPools/terraform-pool-2/providers/github
-          service_account: terraform-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-ecr-role
+          aws-region: ${{ env.AWS_REGION }}
 
-      - uses: google-github-actions/setup-gcloud@v2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - uses: sigstore/cosign-installer@v3.4.0
         with:
           cosign-release: 'v2.2.3'
 
-      - run: gcloud auth configure-docker $GAR_REGION --quiet
-
-      - name: Build & Push Images
+      - name: Build, Push & Sign Images
         run: |
           set -e
           # Optimization: Identify changed files to minimize build blast radius
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} || echo "")
+          TAG=${GITHUB_SHA::7}
 
-          for svc in services/*; do
-            if [ -f "$svc/Dockerfile" ]; then
-              NAME=$(basename "$svc")
-              # Monorepo optimization: Only build if service folder OR shared-lib changed
-              if echo "$CHANGED" | grep -qE "services/$NAME/|services/shared-lib/"; then
-                echo "Building $NAME (Detected Changes)"
-                IMAGE="$GAR_REGION/${{ secrets.GCP_PROJECT_ID }}/$ARTIFACT_REPO/$NAME:${{ github.sha }}"
-                if [ "$NAME" = "storefront-web" ]; then
-                  docker build -t $IMAGE -f "$svc/Dockerfile" "$svc/"
-                else
-                  docker build -t $IMAGE -f "$svc/Dockerfile" .
-                fi
-                docker push $IMAGE
-                cosign sign --yes $IMAGE
+          for SERVICE_DIR in $(find services -mindepth 1 -maxdepth 1 -type d); do
+            NAME=$(basename "$SERVICE_DIR")
+
+            # Skip shared-lib
+            if [[ "$NAME" == "shared-lib" ]]; then
+              continue
+            fi
+
+            # Monorepo optimization: Only build if service folder OR shared-lib changed
+            if echo "$CHANGED" | grep -qE "services/$NAME/|services/shared-lib/"; then
+              IMAGE="${{ env.ECR_REGISTRY }}/${ARTIFACT_REPO}/${NAME}:${TAG}"
+              
+              echo "========================================="
+              echo "Building: $NAME"
+              echo "========================================="
+
+              if [[ "${NAME}" == "storefront-web" ]]; then
+                docker build -t ${IMAGE} -f services/storefront-web/Dockerfile services/storefront-web/
               else
-                 echo "Skipping $NAME (No Changes)"
+                docker build --build-arg SERVICE_NAME=${NAME} -t ${IMAGE} -f Dockerfile.services .
               fi
+
+              docker push ${IMAGE}
+              cosign sign --yes ${IMAGE}
+              echo "✅ Built, pushed, and signed: $NAME"
+            else
+              echo "⏭️ Skipping $NAME (No Changes)"
             fi
           done
 
@@ -248,16 +261,14 @@ jobs:
           set -e
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} || echo "")
           MANIFESTS_CHANGED=false
+          TAG=${GITHUB_SHA::7}
 
           for svc in services/*; do
             if [ -d "$svc/helm" ]; then
               NAME=$(basename "$svc")
               if echo "$CHANGED" | grep -qE "services/$NAME/|services/shared-lib/"; then
                  echo "Updating image tag for $NAME"
-                 
-                 # Using yq or sed to update the tag in values.yaml
-                 # Here we use a simple sed replacement assuming the structure exists
-                 sed -i "s/tag: .*/tag: \"${{ github.sha }}\"/" "$svc/helm/values.yaml"
+                 sed -i "s/tag: .*/tag: \"${TAG}\"/" "$svc/helm/values.yaml"
                  MANIFESTS_CHANGED=true
               fi
             fi
@@ -267,7 +278,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add services/*/helm/values.yaml
-            git commit -m "chore(cd): update image tags to ${{ github.sha }} [skip ci]"
+            git commit -m "chore(cd): update image tags to ${GITHUB_SHA::7} [skip ci]"
             git push origin main
           else
             echo "No manifests needed updating."

@@ -124,7 +124,8 @@ services:
   # ===============================================================
 
   admin-backoffice-service:
-    image: us-central1-docker.pkg.dev/ecommerce-microservice-53/ecommerce-repo/admin-backoffice-service:latest
+    # Replace with your actual ECR image URI
+    image: ${ECR_REGISTRY:-your-account-id.dkr.ecr.us-east-1.amazonaws.com}/ecommerce-repo/admin-backoffice-service:latest
     container_name: admin-backoffice-service
     environment:
       <<: *common-env
@@ -140,7 +141,8 @@ services:
     restart: unless-stopped
 
   cart-service:
-    image: us-central1-docker.pkg.dev/ecommerce-microservice-53/ecommerce-repo/cart-service:latest
+    # Replace with your actual ECR image URI
+    image: ${ECR_REGISTRY:-your-account-id.dkr.ecr.us-east-1.amazonaws.com}/ecommerce-repo/cart-service:latest
     container_name: cart-service
     environment:
       <<: *common-env
@@ -210,6 +212,6 @@ services:
     container_name: tempo
     ports:
       - "3200:3200"
-      - "4317:4317"
+      - "14317:4317" # Remapped to avoid conflict with otel-collector on host port 4317
     networks: [ ecommerce-net ]
     restart: unless-stopped

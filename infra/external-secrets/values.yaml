@@ -1,4 +1,4 @@
-# External Secrets Operator production configuration for GKE + Workload Identity
+# External Secrets Operator production configuration for EKS + IRSA
 
 external-secrets:
 
@@ -11,12 +11,12 @@ external-secrets:
   image:
     pullPolicy: IfNotPresent
 
-  # Kubernetes ServiceAccount linked to GCP ServiceAccount (CRITICAL)
+  # Kubernetes ServiceAccount linked to AWS IAM via IRSA
   serviceAccount:
     create: true
     name: external-secrets
     annotations:
-      iam.gke.io/gcp-service-account: secrets-reader@ecommerce-microservice-53.iam.gserviceaccount.com
+      eks.amazonaws.com/role-arn: "arn:aws:iam::{{ .Values.global.awsAccountId }}:role/ecommerce-irsa-role"
 
   # Webhook configuration (required for validation and conversion)
   webhook:
@@ -69,9 +69,8 @@ external-secrets:
 
   affinity: {}
 
-# Custom config for your GCP environment (used by your templates)
-gcp:
-  projectId: ecommerce-microservice-53
-  clusterName: ecommerce-platform-prod
-  clusterLocation: us-central1
-  serviceAccountEmail: secrets-reader@ecommerce-microservice-53.iam.gserviceaccount.com
+# Custom config for your AWS environment (used by your templates)
+aws:
+  accountId: ""  # Injected via ArgoCD or CI/CD
+  region: "us-east-1"
+  clusterName: "ecommerce-platform-eks-prod"

@@ -2,7 +2,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: ecommerce-all
-  namespace: ecommerce
+  namespace: istio-system
 spec:
   hosts:
     - "*"
@@ -16,7 +16,7 @@ spec:
         uri: /
       route:
         - destination:
-            host: admin-backoffice-service.tooling.svc.cluster.local
+            host: admin-backoffice-service.apps-core.svc.cluster.local
             port:
               number: 8080
 
@@ -82,7 +82,7 @@ spec:
         uri: /
       route:
         - destination:
-            host: cart-service.ecommerce.svc.cluster.local
+            host: cart-service.apps-core.svc.cluster.local
             port:
               number: 8080
 
@@ -104,7 +104,7 @@ spec:
         uri: /
       route:
         - destination:
-            host: feature-flag-service.tooling.svc.cluster.local
+            host: feature-flag-service.apps-core.svc.cluster.local
             port:
               number: 8080
 
@@ -137,7 +137,7 @@ spec:
         uri: /
       route:
         - destination:
-            host: offer-service.ecommerce.svc.cluster.local
+            host: offer-service.apps-core.svc.cluster.local
             port:
               number: 8080
 
@@ -148,7 +148,7 @@ spec:
         uri: /
       route:
         - destination:
-            host: product-service.ecommerce.svc.cluster.local
+            host: product-service.apps-core.svc.cluster.local
             port:
               number: 8080
 

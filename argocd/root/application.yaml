@@ -8,7 +8,7 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: argocd/apps
   destination:

@@ -11,4 +11,4 @@ tempo:
 persistence:
   enabled: true
   size: 10Gi
-  storageClass: standard
+  storageClass: gp3

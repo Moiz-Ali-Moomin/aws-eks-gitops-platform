@@ -1,0 +1,13 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "conversion-webhook.fullname" . }}
+  labels:
+    {{- include "conversion-webhook.labels" . | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "conversion-webhook.selectorLabels" . | nindent 6 }}
+{{- end }}

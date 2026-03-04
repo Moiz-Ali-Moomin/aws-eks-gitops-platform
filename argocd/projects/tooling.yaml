@@ -6,13 +6,15 @@ metadata:
 spec:
   description: "Ops Tooling (Airflow, Sonar, Spark)"
   sourceRepos:
-    - "https://github.com/your-org/ecommerce-platform.git"
+    - "https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks"
   destinations:
     - namespace: sonarqube
       server: https://kubernetes.default.svc
     - namespace: apps-async
       server: https://kubernetes.default.svc
     - namespace: tooling-airflow
+      server: https://kubernetes.default.svc
+    - namespace: tooling-metabase
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: "*"

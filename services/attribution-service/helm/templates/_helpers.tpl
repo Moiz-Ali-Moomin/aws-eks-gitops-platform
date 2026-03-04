@@ -49,20 +49,15 @@ Chart name and version
 {{- end }}
 
 {{/*
-Construct full image reference
+Construct full image reference.
 */}}
-{{- define "attribution-service.image" -}}
-{{- $registry := .Values.global.image.registry | default .Values.image.registry -}}
-{{- $project := .Values.global.image.project | default .Values.image.project -}}
-{{- $repo := .Values.global.image.repository | default .Values.image.repository -}}
-{{- $name := .Values.image.name | default .Chart.Name -}}
-{{- $tag := .Values.image.tag | default .Chart.AppVersion | default "latest" -}}
-{{- printf "%s/%s/%s/%s:%s" $registry $project $repo $name $tag -}}
+{{- define "image" -}}
+{{ .Values.global.awsAccountId }}.dkr.ecr.{{ .Values.global.awsRegion | default "us-east-1" }}.amazonaws.com/ecommerce-repo/{{ .Chart.Name }}:{{ .Values.image.tag }}
 {{- end -}}
 
 {{/*
-Construct GCP Service Account Email
+Construct IRSA role ARN from global.awsAccountId.
 */}}
-{{- define "attribution-service.serviceAccountEmail" -}}
-{{- .Values.serviceAccount.gcpServiceAccount -}}
+{{- define "serviceAccountRoleArn" -}}
+arn:aws:iam::{{ .Values.global.awsAccountId }}:role/{{ .Chart.Name }}-irsa
 {{- end -}}

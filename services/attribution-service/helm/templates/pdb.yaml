@@ -1,0 +1,13 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "attribution-service.fullname" . }}
+  labels:
+    {{- include "attribution-service.labels" . | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "attribution-service.selectorLabels" . | nindent 6 }}
+{{- end }}

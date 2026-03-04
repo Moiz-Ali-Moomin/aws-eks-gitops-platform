@@ -10,9 +10,209 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
     targetRevision: HEAD
     path: infra/observability/otel-collector
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-prometheus
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "11"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+    targetRevision: HEAD
+    path: infra/observability/prometheus
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-grafana
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "12"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+    targetRevision: HEAD
+    path: infra/observability/grafana
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-loki
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "11"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+    targetRevision: HEAD
+    path: infra/observability/loki
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-tempo
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "11"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+    targetRevision: HEAD
+    path: infra/observability/tempo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-alertmanager
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "12"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+    targetRevision: HEAD
+    path: infra/observability/alertmanager
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-blackbox-exporter
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "12"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+    targetRevision: HEAD
+    path: infra/observability/blackbox
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-node-exporter
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "11"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+    targetRevision: HEAD
+    path: infra/observability/node-exporter
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-slos
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "13"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+    targetRevision: HEAD
+    path: infra/observability/slos
   destination:
     server: https://kubernetes.default.svc
     namespace: platform-observability

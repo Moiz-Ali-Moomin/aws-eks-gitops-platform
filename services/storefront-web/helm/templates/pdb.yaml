@@ -1,0 +1,13 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "storefront-web.fullname" . }}
+  labels:
+    {{- include "storefront-web.labels" . | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "storefront-web.selectorLabels" . | nindent 6 }}
+{{- end }}

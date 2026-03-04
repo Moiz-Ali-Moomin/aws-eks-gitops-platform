@@ -1,18 +1,20 @@
-replicaCount: 1
+replicaCount: 2
 
 autoscaling:
   enabled: false
 
 global:
+  awsAccountId: ""
+  awsRegion: "us-east-1"
   image:
-    registry: us-central1-docker.pkg.dev
-    project: ecommerce-microservice-53
+    registry: ""
+    project: ""
     repository: ecommerce-repo
 
 image:
   name: auth-service
   tag: "latest"
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
@@ -20,10 +22,10 @@ service:
 
 env:
   # Infrastructure Hosts
-  DB_HOST: "postgres-primary.data.svc.cluster.local"
+  DB_HOST: "postgres-primary.data-postgres.svc.cluster.local"
   DB_PORT: "5432"
   DB_NAME: "ecommerce_db"
-  REDIS_HOST: "redis-master.data.svc.cluster.local"
+  REDIS_HOST: "redis-master.data-redis.svc.cluster.local"
   REDIS_PORT: "6379"
 
   # Observability
@@ -57,5 +59,9 @@ resources:
 
 serviceAccount:
   create: true
+
   name: auth-service
-  gcpServiceAccount: auth-service@ecommerce-project.iam.gserviceaccount.com
+
+
+podDisruptionBudget:
+  enabled: true

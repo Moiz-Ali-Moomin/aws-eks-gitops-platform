@@ -7,11 +7,11 @@ metadata:
     tier: data
     workload: streaming
   annotations:
-    description: "High-performance storage class for Kafka brokers on GKE"
-provisioner: pd.csi.storage.gke.io
+    description: "High-performance storage class for Kafka brokers on EKS"
+provisioner: ebs.csi.aws.com
 parameters:
-  type: pd-balanced            # Best cost/perf for Kafka
-  replication-type: none       # Kafka handles replication itself
+  type: gp3
+  encrypted: "true"
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
 reclaimPolicy: Retain          # 🔥 Prevents accidental data loss

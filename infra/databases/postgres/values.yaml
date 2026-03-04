@@ -1,7 +1,7 @@
 # ELITE Production-ready values for bitnami/postgresql
 
 global:
-  storageClass: "standard-rwo"
+  storageClass: "gp3"
 
 architecture: replication
 

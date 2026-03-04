@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "storefront-service.name" -}}
+{{- define "storefront-web.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "storefront-service.fullname" -}}
+{{- define "storefront-web.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,9 +24,9 @@ Create a default fully qualified app name.
 {{/*
 Common labels
 */}}
-{{- define "storefront-service.labels" -}}
-helm.sh/chart: {{ include "storefront-service.chart" . }}
-{{ include "storefront-service.selectorLabels" . }}
+{{- define "storefront-web.labels" -}}
+helm.sh/chart: {{ include "storefront-web.chart" . }}
+{{ include "storefront-web.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -36,33 +36,28 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "storefront-service.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "storefront-service.name" . }}
+{{- define "storefront-web.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "storefront-web.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Chart name and version
 */}}
-{{- define "storefront-service.chart" -}}
+{{- define "storefront-web.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
-Construct full image reference
+Construct full image reference.
 */}}
-{{- define "storefront-service.image" -}}
-{{- $registry := .Values.global.image.registry | default .Values.image.registry -}}
-{{- $project := .Values.global.image.project | default .Values.image.project -}}
-{{- $repo := .Values.global.image.repository | default .Values.image.repository -}}
-{{- $name := .Values.image.name | default .Chart.Name -}}
-{{- $tag := .Values.image.tag | default .Chart.AppVersion | default "latest" -}}
-{{- printf "%s/%s/%s/%s:%s" $registry $project $repo $name $tag -}}
+{{- define "image" -}}
+{{ .Values.global.awsAccountId }}.dkr.ecr.{{ .Values.global.awsRegion | default "us-east-1" }}.amazonaws.com/ecommerce-repo/{{ .Chart.Name }}:{{ .Values.image.tag }}
 {{- end -}}
 
 {{/*
-Construct GCP Service Account Email
+Construct IRSA role ARN from global.awsAccountId.
 */}}
-{{- define "storefront-service.serviceAccountEmail" -}}
-{{- .Values.serviceAccount.gcpServiceAccount -}}
+{{- define "serviceAccountRoleArn" -}}
+arn:aws:iam::{{ .Values.global.awsAccountId }}:role/{{ .Chart.Name }}-irsa
 {{- end -}}

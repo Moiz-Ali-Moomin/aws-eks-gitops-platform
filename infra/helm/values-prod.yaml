@@ -1,0 +1,10 @@
+# Production-wide Helm values
+# Shared across all microservices and ArgoCD applications.
+# Set your real AWS account ID before deploying.
+
+global:
+  awsAccountId: "986574565467"
+  awsRegion: "us-east-1"
+  image:
+    registry: ""   # Computed by _helpers.tpl from awsAccountId + awsRegion
+    repository: ecommerce-repo

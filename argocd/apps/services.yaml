@@ -1,3 +1,8 @@
+# ============================================================
+# ArgoCD Applications — Microservices
+# Uses multi-source to inject infra/helm/values-prod.yaml
+# into every service chart for shared global configuration.
+# ============================================================
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -7,10 +12,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/storefront-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/storefront-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-public
@@ -30,10 +41,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/storefront-web/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/storefront-web/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-public
@@ -53,10 +70,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/admin-backoffice-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/admin-backoffice-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-core
@@ -76,10 +99,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/api-gateway/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/api-gateway/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-public
@@ -99,10 +128,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/auth-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/auth-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-core
@@ -122,10 +157,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/user-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/user-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-core
@@ -145,10 +186,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/offer-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/offer-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-core
@@ -168,10 +215,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/notification-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/notification-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-async
@@ -191,10 +244,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/analytics-ingest-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/analytics-ingest-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-async
@@ -214,10 +273,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/attribution-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/attribution-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-async
@@ -237,10 +302,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/audit-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/audit-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-async
@@ -260,10 +331,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/conversion-webhook/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/conversion-webhook/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-public
@@ -283,10 +360,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/feature-flag-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/feature-flag-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-core
@@ -306,10 +389,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/landing-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/landing-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-public
@@ -329,10 +418,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/redirect-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/redirect-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-public
@@ -352,10 +447,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/reporting-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/reporting-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-core
@@ -375,10 +476,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/cart-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/cart-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-core
@@ -398,10 +505,45 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: applications
-  source:
-    repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup
-    targetRevision: HEAD
-    path: services/product-service/helm
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/product-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps-core
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-order-service
+  namespace: platform-argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: applications
+  sources:
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks
+      targetRevision: HEAD
+      path: services/order-service/helm
+      helm:
+        valueFiles:
+          - $values/infra/helm/values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apps-core

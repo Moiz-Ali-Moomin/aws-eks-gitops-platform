@@ -6,12 +6,16 @@ metadata:
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: gcp-secret-store
+    name: aws-secret-store
     kind: ClusterSecretStore
   target:
     name: auth-service-secrets
     creationPolicy: Owner
   data:
+    - secretKey: db-user
+      remoteRef:
+        key: auth-service-db
+        property: db-user
     - secretKey: db-password
       remoteRef:
         key: auth-service-db
@@ -25,7 +29,7 @@ metadata:
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: gcp-secret-store
+    name: aws-secret-store
     kind: ClusterSecretStore
   target:
     name: auth-redis-secret
@@ -44,7 +48,7 @@ metadata:
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: gcp-secret-store
+    name: aws-secret-store
     kind: ClusterSecretStore
   target:
     name: auth-jwt-secret

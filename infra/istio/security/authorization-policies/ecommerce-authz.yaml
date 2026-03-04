@@ -2,7 +2,7 @@ apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: ecommerce-authz
-  namespace: ecommerce
+  namespace: istio-system
 spec:
   action: ALLOW
   rules:

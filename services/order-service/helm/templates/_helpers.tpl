@@ -47,3 +47,17 @@ Chart name and version
 {{- define "order-service.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
+
+{{/*
+Construct full image reference.
+*/}}
+{{- define "image" -}}
+{{ .Values.global.awsAccountId }}.dkr.ecr.{{ .Values.global.awsRegion | default "us-east-1" }}.amazonaws.com/ecommerce-repo/{{ .Chart.Name }}:{{ .Values.image.tag }}
+{{- end -}}
+
+{{/*
+Construct IRSA role ARN from global.awsAccountId.
+*/}}
+{{- define "serviceAccountRoleArn" -}}
+arn:aws:iam::{{ .Values.global.awsAccountId }}:role/{{ .Chart.Name }}-irsa
+{{- end -}}

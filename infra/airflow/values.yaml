@@ -5,7 +5,8 @@ executor: LocalExecutor
 
 images:
   airflow:
-    repository: us-central1-docker.pkg.dev/ecommerce-microservice-53/ecommerce-repo/airflow
+    # IMPORTANT: Replace with your actual AWS Account ID or inject via ArgoCD globals
+    repository: "{{ .Values.global.awsAccountId }}.dkr.ecr.{{ .Values.global.awsRegion }}.amazonaws.com/ecommerce-repo/airflow"
     tag: latest
     pullPolicy: Always
 
@@ -20,16 +21,17 @@ postgresql:
 
   auth:
     enablePostgresUser: true
-    postgresPassword: airflow
+    existingSecret: airflow-metadata-secret
+    secretKeys:
+      adminPasswordKey: password
     username: airflow
-    password: airflow
     database: airflow
 
   primary:
     persistence:
       enabled: true
       size: 10Gi
-      storageClass: standard-rwo
+      storageClass: gp3
 
 
 # DAGs local mount
@@ -37,7 +39,7 @@ dags:
   persistence:
     enabled: true
     size: 1Gi
-    storageClassName: standard-rwo
+    storageClassName: gp3
 
 
 # Logs persistence
@@ -45,7 +47,7 @@ logs:
   persistence:
     enabled: true
     size: 10Gi
-    storageClassName: standard-rwo
+    storageClassName: gp3
 
 
 # Disable hooks (prevents timeout)

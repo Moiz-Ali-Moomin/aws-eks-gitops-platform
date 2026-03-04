@@ -1,11 +1,11 @@
-module github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup/services/admin-backoffice-service
+module github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks/services/admin-backoffice-service
 
 go 1.24.0
 
-replace github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup/services/shared-lib => ../shared-lib
+replace github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks/services/shared-lib => ../shared-lib
 
 require (
-	github.com/Moiz-Ali-Moomin/microservice-ecommerce-gcp-cloud-gke-setup/services/shared-lib v0.0.0-00010101000000-000000000000
+	github.com/Moiz-Ali-Moomin/microservice-ecommerce-aws-cloud-eks/services/shared-lib v0.0.0-00010101000000-000000000000
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	go.uber.org/zap v1.27.0
 )
